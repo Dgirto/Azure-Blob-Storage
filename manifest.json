@@ -1,0 +1,62 @@
+{
+  "id": "azure_blob",
+  "name": "Azure Blob Storage",
+  "name_en": "Azure Blob Storage",
+  "version": "1.0.0",
+  "description": "Gestión de blobs en Azure Storage: listar blobs, subir archivo y descargar archivo",
+  "description_en": "Manage blobs in Azure Storage: list blobs, upload a file and download a file",
+  "icon": "icon.svg",
+  "category": "cloud",
+  "category_en": "cloud",
+  "keywords": ["azure", "blob", "storage", "microsoft", "almacenamiento", "cloud", "nube", "objetos", "objects"],
+  "library": {
+    "package": "ruvic-azure-blob-connector",
+    "install": "pip install git+https://github.com/Dgirto/Azure-Blob-Storage.git#subdirectory=lib",
+    "import_name": "ruvic_azure_blob_connector"
+  },
+  "auth_modes": [
+    {
+      "id": "account_key",
+      "label": "Nombre de cuenta y clave de acceso",
+      "fields": [
+        {
+          "key": "account_name",
+          "label": "Nombre de la cuenta de almacenamiento",
+          "type": "text",
+          "required": true,
+          "placeholder": "miempresastorage"
+        },
+        {
+          "key": "account_key",
+          "label": "Clave de acceso",
+          "type": "password",
+          "secret": true,
+          "required": true,
+          "help_text": "Access key de la cuenta de almacenamiento (Azure Portal → cuenta de almacenamiento → Claves de acceso)"
+        },
+        {
+          "key": "container",
+          "label": "Contenedor",
+          "type": "text",
+          "required": true,
+          "placeholder": "mi-contenedor-produccion",
+          "help_text": "El conector opera sobre un único contenedor. Restringe el acceso de la clave/SAS a este contenedor cuando sea posible (principio de mínimo privilegio)."
+        },
+        {
+          "key": "connect_timeout",
+          "label": "Timeout de conexión (segundos)",
+          "type": "number",
+          "required": false,
+          "default": "10"
+        }
+      ]
+    }
+  ],
+  "env_prefix": "RUVIC_AZURE_BLOB_",
+  "operations": ["blob.list", "blob.upload", "blob.download"],
+  "test_connection": true,
+  "docs": {
+    "skill": "SKILL.md",
+    "permissions_note": "El rol RBAC (ej. Storage Blob Data Contributor) o el SAS token debe otorgar Read, Write y List sobre el contenedor configurado. No se requieren permisos de administración (crear/eliminar contenedores, cambiar políticas de acceso, etc.)."
+  }
+}

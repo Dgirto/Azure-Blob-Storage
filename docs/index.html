@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="doc_title">Conector Azure Blob Storage — Ruvic</title>
+  <link rel="stylesheet" href="assets/ruvic.css">
+</head>
+<body class="guide">
+  <main class="ruvic-container">
+
+    <nav class="ruvic-toc" aria-label="Índice">
+      <h2 data-i18n="toc_title">Contenido</h2>
+      <ol>
+        <li><a href="#que-es" data-i18n="toc.que_es">¿Qué es y para qué sirve?</a></li>
+        <li><a href="#prerrequisitos" data-i18n="toc.prerrequisitos">Prerrequisitos</a></li>
+        <li><a href="#configuracion-fabricante" data-i18n="toc.configuracion_fabricante">Configuración en el fabricante</a></li>
+        <li><a href="#permisos" data-i18n="toc.permisos">Permisos requeridos</a></li>
+        <li><a href="#configuracion-ruvic" data-i18n="toc.configuracion_ruvic">Configuración en Ruvic</a></li>
+        <li><a href="#verificacion" data-i18n="toc.verificacion">Verificación</a></li>
+        <li><a href="#solucion-problemas" data-i18n="toc.solucion_problemas">Solución de problemas</a></li>
+        <li><a href="#faq-seguridad" data-i18n="toc.faq_seguridad">Preguntas frecuentes y notas de seguridad</a></li>
+      </ol>
+    </nav>
+
+    <h1 data-i18n="guide_title">Azure Blob Storage</h1>
+    <p class="guide-updated">{{ULTIMA_ACTUALIZACION}}</p>
+
+    <!-- ============ 1. QUÉ ES ============ -->
+    <section>
+      <h2 id="que-es" data-i18n="section.que_es">¿Qué es y para qué sirve?</h2>
+      <p data-i18n="que_es.body">El conector Azure Blob Storage permite que el agente de Ruvic gestione blobs en un contenedor específico de Azure Storage. Una vez configurado, puedes pedirle al agente cosas como:</p>
+      <ul>
+        <li data-i18n="que_es.ej1">“Sube este reporte al contenedor con el nombre reportes/julio-2026.csv.”</li>
+        <li data-i18n="que_es.ej2">“¿Qué archivos hay en la carpeta facturas/ del contenedor?”</li>
+        <li data-i18n="que_es.ej3">“Descarga el archivo contrato.pdf y muéstrame su contenido.”</li>
+      </ul>
+      <p data-i18n="que_es.ops">Operaciones soportadas:</p>
+      <table>
+        <thead>
+          <tr>
+            <th data-i18n="table.operacion">Operación</th>
+            <th data-i18n="table.que_hace">Qué hace</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>blob.list</code></td>
+            <td data-i18n="ops.list">Lista los blobs del contenedor, con filtro por prefijo</td>
+          </tr>
+          <tr>
+            <td><code>blob.upload</code></td>
+            <td data-i18n="ops.upload">Sube (o sobrescribe) contenido en un blob del contenedor</td>
+          </tr>
+          <tr>
+            <td><code>blob.download</code></td>
+            <td data-i18n="ops.download">Descarga el contenido de un blob</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout callout-warning">
+        <span class="callout-title" data-i18n="que_es.callout.title">Este conector escribe</span>
+        <span data-i18n="que_es.callout.body">blob.upload sobrescribe el blob del nombre indicado. El conector opera sobre un único contenedor; se recomienda que la clave/SAS del usuario esté limitada a ese contenedor específico.</span>
+      </div>
+    </section>
+
+    <!-- ============ 2. PRERREQUISITOS ============ -->
+    <section>
+      <h2 id="prerrequisitos" data-i18n="section.prerrequisitos">Prerrequisitos</h2>
+      <ul>
+        <li data-i18n="prer.cuenta">Una cuenta de <strong>Azure</strong> con una cuenta de almacenamiento y un contenedor ya creados.</li>
+        <li data-i18n="prer.admin">Acceso al <strong>Azure Portal</strong> para obtener la clave de acceso o generar un SAS token, solo durante la configuración inicial.</li>
+        <li data-i18n="prer.datos">El nombre de la cuenta de almacenamiento y del contenedor.</li>
+      </ul>
+    </section>
+
+    <!-- ============ 3. CONFIGURACIÓN EN EL FABRICANTE ============ -->
+    <section>
+      <h2 id="configuracion-fabricante" data-i18n="section.configuracion_fabricante">Configuración en el fabricante</h2>
+      <p data-i18n="fab.intro">Vas a obtener las credenciales de acceso al contenedor que quieres exponer a Ruvic. Se recomienda restringir el acceso a ese contenedor específico cuando sea posible.</p>
+      <ol class="ruvic-steps">
+        <li>
+          <strong data-i18n="fab.p1.t">Localiza tu cuenta de almacenamiento y contenedor.</strong>
+          <p data-i18n="fab.p1.b">En Azure Portal, busca "Cuentas de almacenamiento" → selecciona la tuya → "Contenedores" → confirma el nombre del contenedor que quieres exponer (o crea uno nuevo).</p>
+        </li>
+        <li>
+          <strong data-i18n="fab.p2.t">Obtén la clave de acceso o genera un SAS token.</strong>
+          <p data-i18n="fab.p2.b">Opción simple: en la cuenta de almacenamiento → "Claves de acceso" → copia <code>key1</code> (da acceso a toda la cuenta). Opción recomendada para producción: en el contenedor → "Generar SAS" → permisos <strong>Read, Write, List</strong> → copia el token generado (restringido a ese contenedor).</p>
+          <div class="screenshot-placeholder" data-i18n="fab.p2.img">[ Captura: generación de SAS token con permisos Read/Write/List — reemplazar por assets/img/azure-blob-sas.png ]</div>
+        </li>
+        <li>
+          <strong data-i18n="fab.p3.t">Verifica el acceso desde la línea de comandos.</strong>
+          <p data-i18n="fab.p3.b">Con Azure CLI configurado:</p>
+<pre><code>az storage blob list --account-name TU_CUENTA --container-name TU_CONTENEDOR --account-key TU_CLAVE</code></pre>
+          <p data-i18n="fab.p3.result">Si responde sin error (aunque el contenedor esté vacío), el fabricante quedó listo. Anota estos valores para la siguiente sección: nombre de cuenta, clave/SAS y nombre de contenedor.</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ============ 4. PERMISOS ============ -->
+    <section>
+      <h2 id="permisos" data-i18n="section.permisos">Permisos requeridos</h2>
+      <p data-i18n="perm.intro">Principio de mínimo privilegio: el usuario de Ruvic solo necesita estos permisos sobre el contenedor configurado. No otorgues permisos de administración de la cuenta (crear/eliminar contenedores, cambiar políticas de acceso).</p>
+      <table>
+        <thead>
+          <tr>
+            <th data-i18n="table.permiso">Permiso</th>
+            <th data-i18n="table.para_que">Para qué sirve</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Read</code></td>
+            <td data-i18n="perm.read.body">Descargar blobs (<code>blob.download</code>)</td>
+          </tr>
+          <tr>
+            <td><code>Write</code></td>
+            <td data-i18n="perm.write.body">Subir blobs (<code>blob.upload</code>)</td>
+          </tr>
+          <tr>
+            <td><code>List</code></td>
+            <td data-i18n="perm.list.body">Listar los blobs del contenedor (<code>blob.list</code>)</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout callout-info">
+        <span class="callout-title" data-i18n="perm.note.title">Nota sobre la clave de cuenta</span>
+        <span data-i18n="perm.note.body">Si usas la clave de cuenta (key1/key2) en vez de un SAS token, esa clave da acceso a TODOS los contenedores de la cuenta, no solo al configurado en el conector. Para limitar el alcance real, usa un SAS token restringido al contenedor.</span>
+      </div>
+    </section>
+
+    <!-- ============ 5. CONFIGURACIÓN EN RUVIC ============ -->
+    <section>
+      <h2 id="configuracion-ruvic" data-i18n="section.configuracion_ruvic">Configuración en Ruvic</h2>
+      <p data-i18n="ruvic.intro">Entra a <strong>Settings → Conectores</strong>, busca la tarjeta <strong>Azure Blob Storage</strong> y pulsa <strong>Configurar</strong>. Diligencia el formulario con los valores que obtuviste en la sección anterior:</p>
+      <table>
+        <thead>
+          <tr>
+            <th data-i18n="table.campo">Campo del formulario</th>
+            <th data-i18n="table.valor">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td data-i18n="ruvic.f.account">Nombre de la cuenta de almacenamiento</td>
+            <td data-i18n="ruvic.v.account">El nombre de la cuenta del paso 1</td>
+          </tr>
+          <tr>
+            <td data-i18n="ruvic.f.key">Clave de acceso</td>
+            <td data-i18n="ruvic.v.key">La clave o SAS token del paso 2. Se guarda cifrada como secreto: la interfaz no volverá a mostrarla</td>
+          </tr>
+          <tr>
+            <td data-i18n="ruvic.f.container">Contenedor</td>
+            <td data-i18n="ruvic.v.container">Nombre del contenedor a exponer</td>
+          </tr>
+          <tr>
+            <td data-i18n="ruvic.f.timeout">Timeout de conexión</td>
+            <td data-i18n="ruvic.v.timeout">Opcional; <code>10</code> segundos por defecto</td>
+          </tr>
+        </tbody>
+      </table>
+      <p data-i18n="ruvic.save">Guarda y pulsa <span class="ruvic-button">Probar conexión</span> — la plataforma verificará el acceso al contenedor configurado.</p>
+      <div class="screenshot-placeholder" data-i18n="ruvic.img">[ Captura: formulario del conector Azure Blob Storage en Settings → Conectores — reemplazar por assets/img/azure-blob-form.png ]</div>
+    </section>
+
+    <!-- ============ 6. VERIFICACIÓN ============ -->
+    <section>
+      <h2 id="verificacion" data-i18n="section.verificacion">Verificación</h2>
+      <ol class="ruvic-steps">
+        <li>
+          <strong data-i18n="ver.p1.t">Test de conexión exitoso.</strong>
+          <p data-i18n="ver.p1.b">El botón <em>Probar conexión</em> debe responder: <em>“Conexión exitosa al contenedor 'mi-contenedor-produccion' de 'miempresastorage'”</em>. La tarjeta del conector cambia a estado <strong>Configurado</strong>.</p>
+        </li>
+        <li>
+          <strong data-i18n="ver.p2.t">Automatización mínima de prueba.</strong>
+          <p data-i18n="ver.p2.b">Abre una conversación nueva con el agente y pídele: <em>“Sube un archivo de prueba al contenedor con el texto 'hola mundo' y luego dime qué archivos hay.”</em> El agente debe subir el blob y listarlo de vuelta. Si lo hace, el conector quedó operativo de punta a punta.</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ============ 7. SOLUCIÓN DE PROBLEMAS ============ -->
+    <section>
+      <h2 id="solucion-problemas" data-i18n="section.solucion_problemas">Solución de problemas</h2>
+      <table>
+        <thead>
+          <tr>
+            <th data-i18n="table.sintoma">Mensaje / síntoma</th>
+            <th data-i18n="table.causa">Causa probable y solución</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td data-i18n="prob.s1">“Credenciales inválidas o sin permiso suficiente”</td>
+            <td data-i18n="prob.c1">Clave o SAS token mal copiado, o el SAS expiró (los tokens SAS tienen fecha de vencimiento). Reintenta el paso 2 de la sección 3 y genera un token nuevo si expiró.</td>
+          </tr>
+          <tr>
+            <td data-i18n="prob.s2">“No se pudo conectar a la cuenta … (timeout)”</td>
+            <td data-i18n="prob.c2">Nombre de cuenta mal escrito, o hay un problema de red saliente hacia Azure. Verifica el nombre exacto en el Azure Portal.</td>
+          </tr>
+          <tr>
+            <td data-i18n="prob.s3">“El contenedor no existe”</td>
+            <td data-i18n="prob.c3">Nombre de contenedor mal escrito en el formulario. Verifica con <code>az storage container list --account-name TU_CUENTA</code>.</td>
+          </tr>
+          <tr>
+            <td data-i18n="prob.s4">El agente lista blobs pero falla al descargar uno</td>
+            <td data-i18n="prob.c4">Falta el permiso Read en el SAS token, o el nombre del blob tiene mayúsculas/espacios distintos a los mostrados.</td>
+          </tr>
+          <tr>
+            <td data-i18n="prob.s5">El conector aparece “Sin configurar” tras guardar</td>
+            <td data-i18n="prob.c5">Algún campo obligatorio quedó vacío. Ábrelo de nuevo y completa nombre de cuenta, clave de acceso y contenedor.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============ 8. FAQ Y SEGURIDAD ============ -->
+    <section>
+      <h2 id="faq-seguridad" data-i18n="section.faq_seguridad">Preguntas frecuentes y notas de seguridad</h2>
+
+      <h3 data-i18n="faq.q1">¿El agente puede acceder a otros contenedores de mi cuenta?</h3>
+      <p data-i18n="faq.a1">Depende de qué credencial uses. Con un SAS token restringido al contenedor (recomendado), no. Con la clave de cuenta (key1/key2), técnicamente sí tiene acceso a todos los contenedores, aunque en la práctica el conector solo opera sobre el contenedor configurado en el formulario.</p>
+
+      <h3 data-i18n="faq.q2">¿Dónde queda guardada la clave de acceso?</h3>
+      <p data-i18n="faq.a2">Como secreto en el almacén de credenciales de la plataforma, asociado a tu usuario. La interfaz nunca vuelve a mostrarla; solo indica “definida”. Para cambiarla, escribe una nueva en el formulario; para conservarla al editar otros campos, deja el campo vacío.</p>
+
+      <h3 data-i18n="faq.q3">Rotación de credenciales</h3>
+      <p data-i18n="faq.a3">Si usas la clave de cuenta: regenera key1/key2 desde el Azure Portal periódicamente (esto invalida la clave anterior de inmediato). Si usas un SAS token: genera uno nuevo antes de que expire el actual y actualízalo en el formulario del conector.</p>
+
+      <h3 data-i18n="faq.q4">¿Qué hago si las credenciales se comprometen?</h3>
+      <ol>
+        <li data-i18n="faq.a4.li1">Regenera la clave de cuenta comprometida en Azure Portal, o revoca el SAS token (requiere una política de acceso almacenada, o esperar a que expire).</li>
+        <li data-i18n="faq.a4.li2">Revisa los logs de acceso del Storage Account (Diagnóstico → Logs).</li>
+        <li data-i18n="faq.a4.li3">Actualiza la nueva credencial en el formulario del conector.</li>
+      </ol>
+
+      <h3 data-i18n="faq.q5">¿Expiran las credenciales?</h3>
+      <p data-i18n="faq.a5">Las claves de cuenta no expiran solas (hay que rotarlas manualmente). Los SAS tokens sí tienen fecha de expiración definida al generarlos — planifica su renovación antes de esa fecha para que el conector no deje de funcionar.</p>
+
+      <div class="callout callout-warning">
+        <span class="callout-title" data-i18n="faq.bp.title">Buenas prácticas</span>
+        <span data-i18n="faq.bp.body">Prefiere un SAS token restringido al contenedor específico en vez de la clave de cuenta completa; define una fecha de expiración razonable en el SAS; no expongas contenedores con datos sensibles que el agente no necesite; y evita compartir la clave o el token por canales no seguros.</span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const I18N = {
+      es: {
+        doc_title: "Conector Azure Blob Storage — Ruvic",
+        toc_title: "Contenido",
+        "toc.que_es": "¿Qué es y para qué sirve?",
+        "toc.prerrequisitos": "Prerrequisitos",
+        "toc.configuracion_fabricante": "Configuración en el fabricante",
+        "toc.permisos": "Permisos requeridos",
+        "toc.configuracion_ruvic": "Configuración en Ruvic",
+        "toc.verificacion": "Verificación",
+        "toc.solucion_problemas": "Solución de problemas",
+        "toc.faq_seguridad": "Preguntas frecuentes y notas de seguridad",
+        guide_title: "Azure Blob Storage",
+        "section.que_es": "¿Qué es y para qué sirve?",
+        "que_es.body": "El conector Azure Blob Storage permite que el agente de Ruvic gestione blobs en un contenedor específico de Azure Storage. Una vez configurado, puedes pedirle al agente cosas como:",
+        "que_es.ej1": "“Sube este reporte al contenedor con el nombre reportes/julio-2026.csv.”",
+        "que_es.ej2": "“¿Qué archivos hay en la carpeta facturas/ del contenedor?”",
+        "que_es.ej3": "“Descarga el archivo contrato.pdf y muéstrame su contenido.”",
+        "que_es.ops": "Operaciones soportadas:",
+        "table.operacion": "Operación",
+        "table.que_hace": "Qué hace",
+        "ops.list": "Lista los blobs del contenedor, con filtro por prefijo",
+        "ops.upload": "Sube (o sobrescribe) contenido en un blob del contenedor",
+        "ops.download": "Descarga el contenido de un blob",
+        "que_es.callout.title": "Este conector escribe",
+        "que_es.callout.body": "blob.upload sobrescribe el blob del nombre indicado. El conector opera sobre un único contenedor; se recomienda que la clave/SAS del usuario esté limitada a ese contenedor específico.",
+        "section.prerrequisitos": "Prerrequisitos",
+        "prer.cuenta": "Una cuenta de Azure con una cuenta de almacenamiento y un contenedor ya creados.",
+        "prer.admin": "Acceso al Azure Portal para obtener la clave de acceso o generar un SAS token, solo durante la configuración inicial.",
+        "prer.datos": "El nombre de la cuenta de almacenamiento y del contenedor.",
+        "section.configuracion_fabricante": "Configuración en el fabricante",
+        "fab.intro": "Vas a obtener las credenciales de acceso al contenedor que quieres exponer a Ruvic. Se recomienda restringir el acceso a ese contenedor específico cuando sea posible.",
+        "fab.p1.t": "Localiza tu cuenta de almacenamiento y contenedor.",
+        "fab.p1.b": "En Azure Portal, busca \"Cuentas de almacenamiento\" → selecciona la tuya → \"Contenedores\" → confirma el nombre del contenedor que quieres exponer (o crea uno nuevo).",
+        "fab.p2.t": "Obtén la clave de acceso o genera un SAS token.",
+        "fab.p2.b": "Opción simple: en la cuenta de almacenamiento → \"Claves de acceso\" → copia key1 (da acceso a toda la cuenta). Opción recomendada para producción: en el contenedor → \"Generar SAS\" → permisos Read, Write, List → copia el token generado (restringido a ese contenedor).",
+        "fab.p2.img": "[ Captura: generación de SAS token con permisos Read/Write/List — reemplazar por assets/img/azure-blob-sas.png ]",
+        "fab.p3.t": "Verifica el acceso desde la línea de comandos.",
+        "fab.p3.b": "Con Azure CLI configurado:",
+        "fab.p3.result": "Si responde sin error (aunque el contenedor esté vacío), el fabricante quedó listo. Anota estos valores para la siguiente sección: nombre de cuenta, clave/SAS y nombre de contenedor.",
+        "section.permisos": "Permisos requeridos",
+        "perm.intro": "Principio de mínimo privilegio: el usuario de Ruvic solo necesita estos permisos sobre el contenedor configurado. No otorgues permisos de administración de la cuenta (crear/eliminar contenedores, cambiar políticas de acceso).",
+        "table.permiso": "Permiso",
+        "table.para_que": "Para qué sirve",
+        "perm.read.body": "Descargar blobs (blob.download)",
+        "perm.write.body": "Subir blobs (blob.upload)",
+        "perm.list.body": "Listar los blobs del contenedor (blob.list)",
+        "perm.note.title": "Nota sobre la clave de cuenta",
+        "perm.note.body": "Si usas la clave de cuenta (key1/key2) en vez de un SAS token, esa clave da acceso a TODOS los contenedores de la cuenta, no solo al configurado en el conector. Para limitar el alcance real, usa un SAS token restringido al contenedor.",
+        "section.configuracion_ruvic": "Configuración en Ruvic",
+        "ruvic.intro": "Entra a Settings → Conectores, busca la tarjeta Azure Blob Storage y pulsa Configurar. Diligencia el formulario con los valores que obtuviste en la sección anterior:",
+        "table.campo": "Campo del formulario",
+        "table.valor": "Valor",
+        "ruvic.f.account": "Nombre de la cuenta de almacenamiento",
+        "ruvic.v.account": "El nombre de la cuenta del paso 1",
+        "ruvic.f.key": "Clave de acceso",
+        "ruvic.v.key": "La clave o SAS token del paso 2. Se guarda cifrada como secreto: la interfaz no volverá a mostrarla",
+        "ruvic.f.container": "Contenedor",
+        "ruvic.v.container": "Nombre del contenedor a exponer",
+        "ruvic.f.timeout": "Timeout de conexión",
+        "ruvic.v.timeout": "Opcional; 10 segundos por defecto",
+        "ruvic.save": "Guarda y pulsa Probar conexión — la plataforma verificará el acceso al contenedor configurado.",
+        "ruvic.img": "[ Captura: formulario del conector Azure Blob Storage en Settings → Conectores — reemplazar por assets/img/azure-blob-form.png ]",
+        "section.verificacion": "Verificación",
+        "ver.p1.t": "Test de conexión exitoso.",
+        "ver.p1.b": "El botón Probar conexión debe responder: “Conexión exitosa al contenedor 'mi-contenedor-produccion' de 'miempresastorage'”. La tarjeta del conector cambia a estado Configurado.",
+        "ver.p2.t": "Automatización mínima de prueba.",
+        "ver.p2.b": "Abre una conversación nueva con el agente y pídele: “Sube un archivo de prueba al contenedor con el texto 'hola mundo' y luego dime qué archivos hay.” El agente debe subir el blob y listarlo de vuelta. Si lo hace, el conector quedó operativo de punta a punta.",
+        "section.solucion_problemas": "Solución de problemas",
+        "table.sintoma": "Mensaje / síntoma",
+        "table.causa": "Causa probable y solución",
+        "prob.s1": "“Credenciales inválidas o sin permiso suficiente”",
+        "prob.c1": "Clave o SAS token mal copiado, o el SAS expiró (los tokens SAS tienen fecha de vencimiento). Reintenta el paso 2 de la sección 3 y genera un token nuevo si expiró.",
+        "prob.s2": "“No se pudo conectar a la cuenta … (timeout)”",
+        "prob.c2": "Nombre de cuenta mal escrito, o hay un problema de red saliente hacia Azure. Verifica el nombre exacto en el Azure Portal.",
+        "prob.s3": "“El contenedor no existe”",
+        "prob.c3": "Nombre de contenedor mal escrito en el formulario. Verifica con az storage container list --account-name TU_CUENTA.",
+        "prob.s4": "El agente lista blobs pero falla al descargar uno",
+        "prob.c4": "Falta el permiso Read en el SAS token, o el nombre del blob tiene mayúsculas/espacios distintos a los mostrados.",
+        "prob.s5": "El conector aparece “Sin configurar” tras guardar",
+        "prob.c5": "Algún campo obligatorio quedó vacío. Ábrelo de nuevo y completa nombre de cuenta, clave de acceso y contenedor.",
+        "section.faq_seguridad": "Preguntas frecuentes y notas de seguridad",
+        "faq.q1": "¿El agente puede acceder a otros contenedores de mi cuenta?",
+        "faq.a1": "Depende de qué credencial uses. Con un SAS token restringido al contenedor (recomendado), no. Con la clave de cuenta (key1/key2), técnicamente sí tiene acceso a todos los contenedores, aunque en la práctica el conector solo opera sobre el contenedor configurado en el formulario.",
+        "faq.q2": "¿Dónde queda guardada la clave de acceso?",
+        "faq.a2": "Como secreto en el almacén de credenciales de la plataforma, asociado a tu usuario. La interfaz nunca vuelve a mostrarla; solo indica “definida”. Para cambiarla, escribe una nueva en el formulario; para conservarla al editar otros campos, deja el campo vacío.",
+        "faq.q3": "Rotación de credenciales",
+        "faq.a3": "Si usas la clave de cuenta: regenera key1/key2 desde el Azure Portal periódicamente (esto invalida la clave anterior de inmediato). Si usas un SAS token: genera uno nuevo antes de que expire el actual y actualízalo en el formulario del conector.",
+        "faq.q4": "¿Qué hago si las credenciales se comprometen?",
+        "faq.a4.li1": "Regenera la clave de cuenta comprometida en Azure Portal, o revoca el SAS token (requiere una política de acceso almacenada, o esperar a que expire).",
+        "faq.a4.li2": "Revisa los logs de acceso del Storage Account (Diagnóstico → Logs).",
+        "faq.a4.li3": "Actualiza la nueva credencial en el formulario del conector.",
+        "faq.q5": "¿Expiran las credenciales?",
+        "faq.a5": "Las claves de cuenta no expiran solas (hay que rotarlas manualmente). Los SAS tokens sí tienen fecha de expiración definida al generarlos — planifica su renovación antes de esa fecha para que el conector no deje de funcionar.",
+        "faq.bp.title": "Buenas prácticas",
+        "faq.bp.body": "Prefiere un SAS token restringido al contenedor específico en vez de la clave de cuenta completa; define una fecha de expiración razonable en el SAS; no expongas contenedores con datos sensibles que el agente no necesite; y evita compartir la clave o el token por canales no seguros.",
+      },
+      en: {
+        doc_title: "Azure Blob Storage Connector — Ruvic",
+        toc_title: "Contents",
+        "toc.que_es": "What it is and what it’s for",
+        "toc.prerrequisitos": "Prerequisites",
+        "toc.configuracion_fabricante": "Vendor / provider setup",
+        "toc.permisos": "Required permissions",
+        "toc.configuracion_ruvic": "Configuration in Ruvic",
+        "toc.verificacion": "Verification",
+        "toc.solucion_problemas": "Troubleshooting",
+        "toc.faq_seguridad": "FAQ and security notes",
+        guide_title: "Azure Blob Storage",
+        "section.que_es": "What it is and what it’s for",
+        "que_es.body": "The Azure Blob Storage connector lets the Ruvic agent manage blobs in a specific Azure Storage container. Once configured, you can ask the agent things like:",
+        "que_es.ej1": "“Upload this report to the container as reportes/julio-2026.csv.”",
+        "que_es.ej2": "“What files are in the facturas/ folder of the container?”",
+        "que_es.ej3": "“Download contrato.pdf and show me its content.”",
+        "que_es.ops": "Supported operations:",
+        "table.operacion": "Operation",
+        "table.que_hace": "What it does",
+        "ops.list": "Lists the container's blobs, with prefix filtering",
+        "ops.upload": "Uploads (or overwrites) content at a container blob",
+        "ops.download": "Downloads a blob's content",
+        "que_es.callout.title": "This connector writes",
+        "que_es.callout.body": "blob.upload overwrites the blob at the given name. The connector operates on a single container; the user's key/SAS should be restricted to that specific container.",
+        "section.prerrequisitos": "Prerequisites",
+        "prer.cuenta": "An Azure account with a storage account and container already created.",
+        "prer.admin": "Access to the Azure Portal to get the access key or generate a SAS token, only during initial setup.",
+        "prer.datos": "The storage account name and the container name.",
+        "section.configuracion_fabricante": "Vendor / provider setup",
+        "fab.intro": "You will obtain access credentials for the container you want to expose to Ruvic. Restrict access to that specific container when possible.",
+        "fab.p1.t": "Locate your storage account and container.",
+        "fab.p1.b": "In Azure Portal, search \"Storage accounts\" → select yours → \"Containers\" → confirm the name of the container you want to expose (or create a new one).",
+        "fab.p2.t": "Get the access key or generate a SAS token.",
+        "fab.p2.b": "Simple option: in the storage account → \"Access keys\" → copy key1 (grants access to the whole account). Recommended for production: in the container → \"Generate SAS\" → permissions Read, Write, List → copy the generated token (restricted to that container).",
+        "fab.p2.img": "[ Screenshot: SAS token generation with Read/Write/List permissions — replace with assets/img/azure-blob-sas.png ]",
+        "fab.p3.t": "Verify access from the command line.",
+        "fab.p3.b": "With Azure CLI configured:",
+        "fab.p3.result": "If it responds without error (even with an empty container), the vendor side is ready. Write down these values for the next section: account name, key/SAS and container name.",
+        "section.permisos": "Required permissions",
+        "perm.intro": "Least-privilege principle: the Ruvic user only needs these permissions on the configured container. Do not grant account administration permissions (create/delete containers, change access policies).",
+        "table.permiso": "Permission",
+        "table.para_que": "Why it's needed",
+        "perm.read.body": "Download blobs (blob.download)",
+        "perm.write.body": "Upload blobs (blob.upload)",
+        "perm.list.body": "List the container's blobs (blob.list)",
+        "perm.note.title": "Note on the account key",
+        "perm.note.body": "If you use the account key (key1/key2) instead of a SAS token, that key grants access to ALL containers in the account, not just the one configured in the connector. To truly limit the scope, use a SAS token restricted to the container.",
+        "section.configuracion_ruvic": "Configuration in Ruvic",
+        "ruvic.intro": "Go to Settings → Connectors, find the Azure Blob Storage card and click Configure. Fill in the form with the values from the previous section:",
+        "table.campo": "Form field",
+        "table.valor": "Value",
+        "ruvic.f.account": "Storage account name",
+        "ruvic.v.account": "The account name from step 1",
+        "ruvic.f.key": "Access key",
+        "ruvic.v.key": "The key or SAS token from step 2. Stored encrypted as a secret: the UI will never display it again",
+        "ruvic.f.container": "Container",
+        "ruvic.v.container": "Name of the container to expose",
+        "ruvic.f.timeout": "Connection timeout",
+        "ruvic.v.timeout": "Optional; defaults to 10 seconds",
+        "ruvic.save": "Save and click Test connection — the platform will verify access to the configured container.",
+        "ruvic.img": "[ Screenshot: Azure Blob Storage connector form in Settings → Connectors — replace with assets/img/azure-blob-form.png ]",
+        "section.verificacion": "Verification",
+        "ver.p1.t": "Successful connection test.",
+        "ver.p1.b": "The Test connection button should return: “Successful connection to container 'mi-contenedor-produccion' of 'miempresastorage'”. The connector card switches to Configured.",
+        "ver.p2.t": "Minimal test automation.",
+        "ver.p2.b": "Open a new conversation with the agent and ask: “Upload a test file to the container with the text 'hola mundo' and then tell me what files are there.” The agent should upload the blob and list it back. If it does, the connector is fully operational.",
+        "section.solucion_problemas": "Troubleshooting",
+        "table.sintoma": "Message / symptom",
+        "table.causa": "Likely cause and fix",
+        "prob.s1": "“Invalid credentials or insufficient permission”",
+        "prob.c1": "Mistyped key or SAS token, or the SAS expired (SAS tokens have an expiration date). Redo step 2 of section 3 and generate a new token if it expired.",
+        "prob.s2": "“Could not connect to the account … (timeout)”",
+        "prob.c2": "Mistyped account name, or there's an outbound network issue toward Azure. Verify the exact name in the Azure Portal.",
+        "prob.s3": "“The container does not exist”",
+        "prob.c3": "Container name mistyped in the form. Verify with az storage container list --account-name YOUR_ACCOUNT.",
+        "prob.s4": "The agent lists blobs but fails downloading one",
+        "prob.c4": "Missing Read permission in the SAS token, or the blob name has different casing/spacing than shown.",
+        "prob.s5": "Connector shows “Not configured” after saving",
+        "prob.c5": "A required field was left empty. Open it again and fill in account name, access key and container.",
+        "section.faq_seguridad": "FAQ and security notes",
+        "faq.q1": "Can the agent access other containers in my account?",
+        "faq.a1": "Depends on which credential you use. With a container-scoped SAS token (recommended), no. With the account key (key1/key2), it technically has access to every container, though in practice the connector only operates on the container set in the form.",
+        "faq.q2": "Where is the access key stored?",
+        "faq.a2": "As a secret in the platform's credential store, tied to your user. The UI never displays it again; it only shows “set”. To change it, type a new one in the form; to keep it while editing other fields, leave the field empty.",
+        "faq.q3": "Credential rotation",
+        "faq.a3": "If using the account key: regenerate key1/key2 from the Azure Portal periodically (this invalidates the old key immediately). If using a SAS token: generate a new one before the current one expires and update it in the connector form.",
+        "faq.q4": "What if the credentials are compromised?",
+        "faq.a4.li1": "Regenerate the compromised account key in the Azure Portal, or revoke the SAS token (requires a stored access policy, or wait for it to expire).",
+        "faq.a4.li2": "Review the Storage Account's access logs (Diagnostics → Logs).",
+        "faq.a4.li3": "Update the new credential in the connector form.",
+        "faq.q5": "Do the credentials expire?",
+        "faq.a5": "Account keys don't expire on their own (you must rotate them manually). SAS tokens do have an expiration date set when generated — plan their renewal before that date so the connector doesn't stop working.",
+        "faq.bp.title": "Best practices",
+        "faq.bp.body": "Prefer a container-scoped SAS token over the full account key; set a reasonable expiration date on the SAS; do not expose containers with sensitive data the agent doesn't need; and never share the key or token over insecure channels.",
+      },
+    };
+    /* El portal aplica el idioma del usuario (localStorage ruvic-docs-lang)
+       y actualiza [data-i18n], [data-i18n-placeholder] y [data-i18n-alt]. */
+  </script>
+</body>
+</html>

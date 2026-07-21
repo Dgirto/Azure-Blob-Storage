@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ruvic-azure-blob-connector"
+version = "1.0.0"
+description = "Conector Ruvic para gestión de blobs en Azure Blob Storage"
+requires-python = ">=3.10"
+dependencies = [
+    "azure-storage-blob>=12.19,<13.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["ruvic_azure_blob_connector*"]
